@@ -22,27 +22,18 @@ def consume_commit(url):
     repo_name = url.split("/")[-1].replace(".git", "")
     repo_dir = os.path.join(BASE_DIR, repo_name)
 
-    os.makedirs(repo_dir, exist_ok=True)
     if not os.path.exists(repo_dir):
         run(f"git clone {url}", cwd=BASE_DIR)
-
-    refs = run("git ls-remote origin draft", cwd=repo_dir)
-    if not refs.strip():
-        print(f"❌ draft 브랜치 없음: {repo_name} - {refs}")
-        return False
-
-    run(f"git fetch origin", cwd=repo_dir)
-
-    branches = run("git branch", cwd=repo_dir)
-
-    if "draft" not in branches:
-        run("git checkout -b draft origin/draft", cwd=repo_dir)
     else:
-        run("git checkout draft", cwd=repo_dir)
+        run("git fetch origin", cwd=repo_dir)
 
+    print(run("git remote show origin", cwd=repo_dir))  ## 디버깅용
+
+    # main 브랜치가 최신인지 확인
     run("git checkout main", cwd=repo_dir)
     run("git pull origin main", cwd=repo_dir)
 
+    # draft 브랜치가 최신인지 확인
     run("git checkout draft", cwd=repo_dir)
     run("git pull origin draft", cwd=repo_dir)
 
@@ -59,7 +50,15 @@ def consume_commit(url):
 
     # 3. cherry-pick to main
     run("git checkout main", cwd=repo_dir)
-    run(f"git cherry-pick {first_commit}", cwd=repo_dir)
+    try:
+        run(f"git cherry-pick {first_commit}", cwd=repo_dir)
+    except RuntimeError as e:
+        if "cherry-pick is now empty" in str(e):
+            print("⚠️  변경사항 없음 — cherry-pick 건너뜀")
+            run("git cherry-pick --skip", cwd=repo_dir)
+            return False
+        else:
+            raise
 
     # 4. amend로 시간 갱신
     now = datetime.datetime.now().isoformat()
@@ -74,7 +73,7 @@ def consume_commit(url):
     run("git push origin main", cwd=repo_dir)
 
     run("git checkout draft", cwd=repo_dir)
-    run("git push origin draft", cwd=repo_dir)
+    run("git push origin draft --force", cwd=repo_dir)
 
     print("✅ 자동 커밋 및 rebase 완료.")
     last_commit_hash = run("git rev-parse HEAD", cwd=repo_dir)
@@ -91,6 +90,7 @@ def consume_commit(url):
 GITHUB_TOKEN = os.getenv("GH_TOKEN")  # GitHub Personal Access Token
 # GITHUB_USERNAME = "yubin"
 BASE_DIR = "./repos"
+os.makedirs(BASE_DIR, exist_ok=True)
 
 headers = {"Authorization": f"Bearer {GITHUB_TOKEN}"}
 
@@ -121,11 +121,19 @@ if response.status_code != 200:
 repo_urls = [node["sshUrl"] for node in data["data"]["viewer"]["repositories"]["nodes"]]
 
 for url in repo_urls:
+
+    refs = run(f"git ls-remote --heads {url} draft", cwd=BASE_DIR)
+
+    if not refs.strip():
+        print(f"❌ draft 브랜치 없음: {url}")
+        continue
+
     print(f"Processing repository: {url}")
     try:
         if consume_commit(url):
             # main 브랜치에 푸시한 후, 마지막 커밋 정보 출력
             print(f"✅ Successfully processed {url}")
+            exit(0)
         else:
             print(f"❌ No new commits to process for {url}")
     except Exception as e:
