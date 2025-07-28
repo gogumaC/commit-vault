@@ -1,0 +1,40 @@
+name: 🕐 Auto Cherry-Pick Draft Commit
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 매일 00:00 UTC → 한국 기준 오전 9시
+  push:
+    branches:
+      - main             # main 브랜치에 push될 때도 실행
+  workflow_dispatch:     # 수동 실행 버튼
+
+jobs:
+  auto-commit:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+    steps:
+      - name: ✅ Checkout this repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 🛠 Install git & ssh
+        run: |
+          sudo apt update
+          sudo apt install -y git openssh-client
+
+      - name: 🔐 Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: 📦 Install dependencies
+        run: pip install --upgrade pip
+
+      - name: 🚀 Run draft automation script
+        run: python repo_list_up.py
