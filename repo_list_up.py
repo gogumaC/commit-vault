@@ -26,7 +26,19 @@ def consume_commit(url):
     if not os.path.exists(repo_dir):
         run(f"git clone {url}", cwd=BASE_DIR)
 
-    run(f"git fetch origin", cwd=BASE_DIR)
+    refs = run("git ls-remote origin draft", cwd=repo_dir)
+    if not refs.strip():
+        print(f"❌ draft 브랜치 없음: {repo_name} - {refs}")
+        return False
+
+    run(f"git fetch origin", cwd=repo_dir)
+
+    branches = run("git branch", cwd=repo_dir)
+
+    if "draft" not in branches:
+        run("git checkout -b draft origin/draft", cwd=repo_dir)
+    else:
+        run("git checkout draft", cwd=repo_dir)
 
     run("git checkout main", cwd=repo_dir)
     run("git pull origin main", cwd=repo_dir)
