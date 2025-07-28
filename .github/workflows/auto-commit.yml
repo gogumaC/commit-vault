@@ -34,7 +34,9 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: 📦 Install dependencies
-        run: pip install --upgrade pip
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: 🚀 Run draft automation script
         run: python repo_list_up.py
