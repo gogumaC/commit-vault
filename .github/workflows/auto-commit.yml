@@ -13,8 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      GITHUB_USER_NAME: ${{ vars.USER_NAME }}
+      GITHUB_USER_EMAIL: ${{ vars.USER_EMAIL }}
 
     steps:
+      - name: Check required variables
+        run: |
+          : "${GH_TOKEN:?Missing GH_TOKEN}"
+          : "${GITHUB_USER_NAME:?Missing GITHUB_USER_NAME}"
+          : "${GITHUB_USER_EMAIL:?Missing GITHUB_USER_EMAIL}"
+
       - name: ✅ Checkout this repository
         uses: actions/checkout@v4
 

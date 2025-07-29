@@ -27,6 +27,9 @@ def consume_commit(url):
     else:
         run("git fetch origin", cwd=repo_dir)
 
+    run(f"git config user.name {USER_NAME}", cwd=repo_dir)
+    run(f"git config user.email {USER_EMAIL}", cwd=repo_dir)
+
     print(run("git remote show origin", cwd=repo_dir))  ## 디버깅용
 
     # main 브랜치가 최신인지 확인
@@ -88,6 +91,8 @@ def consume_commit(url):
 
 
 GITHUB_TOKEN = os.getenv("GH_TOKEN")  # GitHub Personal Access Token
+USER_NAME = os.getenv("GITHUB_USER_NAME")
+USER_EMAIL = os.getenv("GITHUB_USER_EMAIL")
 # GITHUB_USERNAME = "yubin"
 BASE_DIR = "./repos"
 os.makedirs(BASE_DIR, exist_ok=True)
@@ -133,7 +138,7 @@ for url in repo_urls:
         if consume_commit(url):
             # main 브랜치에 푸시한 후, 마지막 커밋 정보 출력
             print(f"✅ Successfully processed {url}")
-            exit(0)
+            break  # 성공적으로 처리된 경우 루프 종료
         else:
             print(f"❌ No new commits to process for {url}")
     except Exception as e:
