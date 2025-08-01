@@ -42,5 +42,17 @@ It needs to add two secrete value.
     Then you need to paste your private key in the github secrete in your repository.
 
 
-### 3. Add
+### 3. Set variables
+
+You need to set two variables
+
+- USER_EMAIL
+- USER_NAME
+
+commit-vault will commit the draft commit with these information.
+
+This variables will be used in git configure command.
+
+This will decide wich user are created the commit.
+
 
